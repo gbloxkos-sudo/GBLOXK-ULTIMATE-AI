@@ -1,0 +1,22 @@
+version: "3.8"
+services:
+  gbloxkos:
+    build: .
+    image: gbloxkos:latest
+    container_name: gbloxkos
+    ports:
+      - "5050:5050"
+      - "11434:11434"
+    volumes:
+      - ollama_models:/root/.ollama
+      - gbloxkos_scans:/app/scans
+      - gbloxkos_memory:/app/memory
+      - gbloxkos_outputs:/app/ai_output
+      - gbloxkos_rag:/app/rag_store
+    restart: unless-stopped
+volumes:
+  ollama_models:
+  gbloxkos_scans:
+  gbloxkos_memory:
+  gbloxkos_outputs:
+  gbloxkos_rag:

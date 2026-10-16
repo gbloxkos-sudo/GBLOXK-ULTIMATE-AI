@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>GBLOXKOS — Full Auto Local AI Assistant</title>
+<style>
+:root{--bg:#0b1220;--panel:#111c33;--line:#22345c;--txt:#dbe7ff;--mut:#8aa0c6;--acc:#39d0ff;--grn:#3ddc84;--amb:#ffb020;--red:#ff5470;--vio:#b388ff}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--txt);font:14px/1.5 system-ui,Segoe UI,Roboto,Arial}
+header{display:flex;gap:10px;align-items:center;padding:10px 16px;border-bottom:1px solid var(--line);background:#0d1628;position:sticky;top:0;z-index:5;flex-wrap:wrap}
+header h1{font-size:17px;margin:0}header h1 span{color:var(--acc)}
+.badge{font-size:11px;border:1px solid var(--grn);color:var(--grn);border-radius:20px;padding:2px 10px}
+.badge2{font-size:11px;border:1px solid var(--vio);color:var(--vio);border-radius:20px;padding:2px 10px}
+main{display:grid;grid-template-columns:330px 1fr;gap:14px;padding:14px;max-width:1600px;margin:0 auto}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px;margin-bottom:14px}
+.card h3{margin:0 0 10px;font-size:13px;color:var(--acc);text-transform:uppercase;letter-spacing:.06em}
+label{display:block;font-size:12px;color:var(--mut);margin:8px 0 4px}
+input,select,textarea{width:100%;background:#0a1326;border:1px solid var(--line);color:var(--txt);border-radius:8px;padding:9px}
+textarea{min-height:90px;font-family:inherit}
+button{background:var(--acc);border:0;color:#04222e;font-weight:700;border-radius:8px;padding:10px 14px;cursor:pointer;margin-top:10px;width:100%}
+button.ghost{background:transparent;border:1px solid var(--line);color:var(--txt)}
+button.warn{background:var(--amb)}button.danger{background:var(--red);color:#fff}button.ok{background:var(--grn);color:#04160b}
+.row{display:flex;gap:8px}.row>*{flex:1}
+.tabs{display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap}
+.tabs button{width:auto;margin:0;padding:7px 12px;font-size:13px}
+.tabs button.on{background:var(--grn);color:#04160b}
+.pill{display:inline-block;border:1px solid var(--line);border-radius:16px;padding:2px 10px;margin:2px;font-size:12px}
+.pill.ok{border-color:var(--grn);color:var(--grn)}.pill.miss{border-color:var(--amb);color:var(--amb)}
+#log,#agentLog{background:#050a15;border:1px solid var(--line);border-radius:8px;height:300px;overflow:auto;white-space:pre-wrap;padding:10px;font-family:monospace;font-size:12px}
+#chat{height:380px;overflow:auto;background:#050a15;border-radius:8px;padding:10px;margin-bottom:8px}
+.msg{margin:6px 0}.msg.u{text-align:right}.msg span{display:inline-block;padding:7px 10px;border-radius:10px;max-width:92%;white-space:pre-wrap;text-align:left}
+.msg.u span{background:#1c3d5a}.msg.a span{background:#132b1c}
+.msg small{display:block;color:var(--mut);margin-top:3px}
+table{width:100%;border-collapse:collapse;font-size:12px}td,th{border-bottom:1px solid var(--line);padding:5px;text-align:left;vertical-align:top}
+.file{cursor:pointer;padding:4px 6px;border-radius:6px}.file:hover{background:#1a2a4d}
+#report,#preview,#ragAns,#compOut,#resOut{white-space:pre-wrap;background:#050a15;border-radius:8px;padding:12px;max-height:480px;overflow:auto}
+small{color:var(--mut)}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+@media(max-width:1000px){main{grid-template-columns:1fr}.grid2{grid-template-columns:1fr}}
+.kbd{border:1px solid var(--line);border-radius:6px;padding:1px 7px;font-size:12px;background:#0a1326}
+</style>
+</head>
+<body>
+<header>
+<h1>GBLOXK<span>OS</span></h1>
+<div class="badge">GBLOXKOS · FREE-MODE · OLLAMA LOCAL · NO PAID KEYS</div>
+<div class="badge2">GBLOXKOS · Unified AI Assistant by GBLOXK_OS LLC</div>
+<div style="margin-left:auto;display:flex;gap:8px;align-items:center">
+<select id="model" style="min-width:300px"></select>
+<button id="refreshModels" class="ghost" style="width:auto;margin:0">↻</button>
+<span id="health" class="pill">…</span>
+</div>
+</header>
+<main>
+<div>
+<div class="card"><h3>⚙ Mode + Model params</h3>
+<label>Work mode (PyGPT-style)</label>
+<select id="workmode">
+<option value="chat">Chat — general assistant</option>
+<option value="pentest">Pentest copilot (grounded in scan)</option>
+<option value="research">Research — free brief</option>
+<option value="completion">Completion — raw prompt</option>
+<option value="rag">RAG — answer from my docs</option>
+<option value="autonomous">Autonomous agent — 3-step auto</option>
+<option value="vision">Vision — image + question</option>
+</select>
+<label>System prompt</label>
+<input id="system" value="You are GBLOXKOS — senior local assistant by GBLOXK_OS LLC. Concrete, safe, free tools only.">
+<div class="row"><div><label>Temperature</label><input id="temp" value="0.7"></div><div><label>Session</label><input id="session" value="default"></div></div>
+<label><input type="checkbox" id="useRag" checked style="width:auto"> Use RAG docs in chat</label>
+</div>
+<div class="card"><h3>1 · Target + Auto-Pentest</h3>
+<label>Target (only what you own / authorized)</label>
+<input id="target" placeholder="example.com or 127.0.0.1">
+<label>Scan mode</label>
+<select id="mode">
+<option value="auto">AUTO — native free recon (Recommended, no external chains)</option>
+</select>
+<button id="start">▶ START AUTO-PENTEST</button>
+<div class="row"><button id="stop" class="danger">■ STOP</button><button id="stopAll" class="warn">■ STOP ALL JOBS</button><button id="quit" class="ghost">⏻ CLOSE</button></div>
+<label>Active scan</label><select id="scans"></select>
+<div class="row"><button id="watch" class="ghost">Watch</button><button id="loadFiles" class="ghost">Files</button></div>
+</div>
+<div class="card"><h3>2 · AI Pentest Report</h3>
+<label>Profile</label>
+<select id="rtype"><option value="pentest">pentest — full report</option><option value="bughunter">bughunter</option><option value="executive">executive</option><option value="brief">brief — 5 bullets</option><option value="exploit">exploit — verify</option><option value="remediation">remediation — fixes</option></select>
+<button id="analyze">🧠 GENERATE REPORT</button><small id="arep"></small>
+</div>
+<div class="card"><h3>Voice (browser, free)</h3>
+<div class="row"><button id="mic" class="ghost">🎤 Speak</button><button id="speak" class="ghost">🔊 Read last</button></div>
+<small>Uses built-in Web Speech API — no server needed.</small></div>
+</div>
+<div>
+<div class="card">
+<div class="tabs">
+<button data-t="chat" class="on">💬 Chat</button>
+<button data-t="pentest">🛰 Pentest</button>
+<button data-t="rag">📚 RAG Docs</button>
+<button data-t="agent">🤖 Agents/Auto</button>
+<button data-t="lab">🧪 Lab (Full System)</button>
+<button data-t="models">📦 Models</button>
+<button data-t="tools">🛠 Tools</button><button data-t="browser">🌐 Browser</button><button data-t="crawler">🕷 Crawler</button>
+<button data-t="reports">📄 Reports</button>
+<button data-t="notes">🗒 Notes+Schedule</button>
+</div>
+<div id="pane-chat">
+<div id="chat"></div>
+<div class="row"><input id="qin" placeholder="Ask anything… (Enter = send, Shift+Enter = newline). Try: 'scan 127.0.0.1 then summarize'"><button id="qsend" style="max-width:130px">Send ➤</button><button id="qstop" class="ghost" style="max-width:100px">■ Stop</button></div>
+<div class="row"><button id="hist" class="ghost">History</button><button id="clearHist" class="ghost">Clear session</button><button id="exportChat" class="ghost">Export .md</button></div>
+</div>
+<div id="pane-pentest" style="display:none">
+<h3 style="color:var(--acc);font-size:13px">LIVE LOG</h3><div id="log">idle — start a scan.</div>
+<h3 style="color:var(--acc);font-size:13px;margin-top:12px">FINDINGS + FILES</h3>
+<div class="tabs"><button data-s="find" class="on">Findings</button><button data-s="files">Files</button><button data-s="rep">AI report</button></div>
+<div id="spane-find"><table id="ftab"><tr><th>Type</th><th>Detail</th><th>Severity</th></tr></table></div>
+<div id="spane-files" style="display:none"><div id="files"></div><div id="preview"></div></div>
+<div id="spane-rep" style="display:none"><div id="report">No report yet.</div><div class="row"><button id="dlRep" class="ghost">Download last report</button></div></div>
+</div>
+<div id="pane-rag" style="display:none">
+<div class="row"><input type="file" id="ragFile"><button id="ragUp" style="max-width:160px">Upload</button></div>
+<div id="ragList" style="margin:8px 0"></div>
+<label>RAG question (answers grounded in your docs)</label>
+<div class="row"><input id="ragQ" placeholder="What does my doc say about…?"><button id="ragAsk" style="max-width:130px">Ask 📚</button></div>
+<div id="ragAns">No RAG answer yet.</div>
+</div>
+<div id="pane-agent" style="display:none">
+<label>Autonomous goal (3-step local agent, like PyGPT Autonomous mode)</label>
+<input id="goal" placeholder="e.g. Harden my web server on 127.0.0.1 — enumerate, prioritize, give fix commands">
+<button id="runAgent">🚀 RUN AUTONOMOUS AGENT</button>
+<div class="row"><button id="stopAgent" class="ghost">Stop agent</button><button id="pollAgent" class="ghost">Refresh log</button></div>
+<div id="agentLog">No agent run yet.</div>
+<hr>
+<label>Research (free, no keys)</label>
+<div class="row"><input id="resQ" placeholder="e.g. CVE-2024-6387 OpenSSH mitigation"><button id="resGo" style="max-width:130px">Research</button></div>
+<div id="resOut">No research yet.</div>
+<hr>
+<label>Completion (raw prompt → model)</label>
+<textarea id="compP" placeholder="Write raw prompt…"></textarea>
+<button id="compGo" class="ghost">Complete</button>
+<div id="compOut">No completion yet.</div>
+</div>
+<div id="pane-lab" style="display:none">
+<div class="badge">FULL SYSTEM ACCESS — app runs as YOU. Any command / file the user asks for is allowed. Use responsibly.</div>
+<div class="grid2">
+<div><label>Python tool (FULL access: os, sys, subprocess pre-imported)</label><textarea id="pyCode">import os; print(os.path.expanduser("~")); print(os.listdir(".")[:10])</textarea><button id="pyGo" class="ghost">Run Python (full)</button></div>
+<div><label>Shell tool (FULL access: any binary, pipes, sudo supported)</label><textarea id="shCode">whoami; id; pwd; ollama list | head -5</textarea><div class="row"><input id="shCwd" placeholder="cwd (default: app dir)"><input id="shTimeout" placeholder="timeout s (default 120)" style="max-width:130px"></div><button id="shGo" class="ghost">Run Shell (full)</button></div>
+</div>
+<div id="labOut" style="white-space:pre-wrap;background:#050a15;border-radius:8px;padding:10px;margin-top:8px;max-height:300px;overflow:auto">Lab output appears here.</div>
+<hr>
+<label>System file browser (read/write ANY path you own, e.g. ~/Documents, /etc/hosts read)</label>
+<div class="row"><input id="fsPath" placeholder="~/Documents"><button id="fsList" class="ghost" style="max-width:110px">List</button><button id="fsRead" class="ghost" style="max-width:110px">Read</button></div>
+<div class="row"><input id="fsWritePath" placeholder="save path, e.g. /tmp/note.txt"><button id="fsWrite" class="ghost" style="max-width:130px">Write below ⤵</button></div>
+<textarea id="fsContent" placeholder="file content for Read (shows here) / Write (edit then Write)"></textarea>
+<hr>
+<label>Vision (image + Ollama vision model if installed, else metadata)</label>
+<div class="row"><input type="file" id="visFile" accept="image/*"><input id="visP" placeholder="Question about image"><button id="visGo" style="max-width:130px">Analyze 🖼</button></div>
+<div id="visOut" style="white-space:pre-wrap;background:#050a15;border-radius:8px;padding:10px;margin-top:8px">No vision result.</div>
+</div>
+<div id="pane-models" style="display:none">
+<label>Installed Ollama models (ollama-gui style)</label><div id="modelList"></div>
+<label>Pull new model (type + Enter, e.g. llama3.2 / qwen3:0.6b / llava)</label>
+<div class="row"><input id="pullName" placeholder="model name"><button id="pullGo" style="max-width:130px">Pull ⬇</button></div>
+<div id="modelInfo" style="white-space:pre-wrap;background:#050a15;border-radius:8px;padding:10px;margin-top:8px">Model details appear here.</div>
+</div>
+<div id="pane-tools" style="display:none">
+<div id="tools"><small>loading…</small></div>
+<button id="installTools" class="warn">⬇ INSTALL / REFRESH FREE TOOLCHAIN</button>
+<div id="instLog" style="white-space:pre-wrap;background:#050a15;border-radius:8px;padding:10px;margin-top:8px;max-height:300px;overflow:auto"></div>
+<hr><div id="keys"><small>loading keys…</small></div>
+</div>
+<div id="pane-browser" style="display:none">
+<h3>Free Browser (internet) — fetch, render, screenshot, analyze</h3>
+<div class="row"><input id="brUrl" placeholder="https://example.com" value="https://example.com"><button id="brGo" style="max-width:120px">Go</button><button id="brShot" class="ghost">Screenshot</button><button id="brLive" class="ghost">Live: off</button></div>
+<div class="row"><textarea id="brPrompt" style="min-height:40px" placeholder="What should the AI analyze on this page? (optional)"></textarea><button id="brAnalyze" style="max-width:140px">Analyze</button></div>
+<div class="grid"><div><h4>Screenshot / Live Feed</h4><img id="brImg" style="max-width:100%;border:1px solid #1f2f4d;border-radius:6px;background:#000" alt="no screenshot"><div id="brImgInfo" class="small"></div></div><div><h4>Page Text (extracted)</h4><textarea id="brText" style="min-height:260px" readonly></textarea></div></div>
+<div><h4>Links</h4><div id="brLinks" style="max-height:180px;overflow:auto"></div></div>
+<div id="brStatus" class="small"></div>
+</div>
+<div id="pane-crawler" style="display:none">
+<h3>Advanced Website Crawler — tech detection, link/form inventory, AI analysis</h3>
+<div class="card">
+<div class="row"><input id="crUrl" placeholder="https://example.com" value="https://example.com" style="flex:3"><button id="crStart" style="max-width:120px">Start</button><button id="crStop" class="danger" style="max-width:90px">Stop</button></div>
+<div class="row">
+<div><label>Max pages</label><input id="crMax" value="30"></div>
+<div><label>Max depth</label><input id="crDepth" value="2"></div>
+<div><label>Delay s</label><input id="crDelay" value="0.2"></div>
+<div><label><input type="checkbox" id="crSame" checked style="width:auto"> same domain</label><label><input type="checkbox" id="crRender" style="width:auto"> render JS</label><label><input type="checkbox" id="crRobots" checked style="width:auto"> respect robots</label></div>
+</div>
+<label>Active crawl</label><select id="crList"></select>
+<div class="row"><button id="crWatch" class="ghost">Watch</button><button id="crRefresh" class="ghost">Refresh list</button><button id="crAnalyze" style="max-width:160px">AI Analyze Site</button><button id="crAnalyzePage" class="ghost" style="max-width:160px">AI Analyze Selected Page</button></div>
+<div id="crStatus" class="small">idle</div>
+</div>
+<div class="card"><h3>Live log</h3><div id="crLog" style="background:#050a15;border-radius:8px;padding:10px;max-height:240px;overflow:auto;white-space:pre-wrap;font-family:monospace;font-size:12px">idle</div></div>
+<div class="card">
+<div class="tabs"><button data-c="pages" class="on">Pages</button><button data-c="tech">Tech stack</button><button data-c="detail">Page detail</button><button data-c="analysis">AI analysis</button></div>
+<div id="crpane-pages"><table id="crPages" style="width:100%;font-size:12px"><tr><th>#</th><th>Status</th><th>URL</th><th>Title</th><th>Tech</th><th>Links/Forms</th></tr></table></div>
+<div id="crpane-tech" style="display:none"><div id="crTech"></div></div>
+<div id="crpane-detail" style="display:none">
+<label>Page</label><select id="crPageSel"></select>
+<div class="row"><button id="crShowPage" class="ghost" style="max-width:160px">Load page</button></div>
+<pre id="crPageOut" style="background:#050a15;padding:10px;max-height:360px;overflow:auto;white-space:pre-wrap"></pre>
+</div>
+<div id="crpane-analysis" style="display:none"><div id="crAnalysis" style="background:#050a15;padding:10px;max-height:480px;overflow:auto;white-space:pre-wrap">No analysis yet.</div></div>
+</div>
+</div>
+<div id="pane-reports" style="display:none"><div id="reps"></div><div class="row"><button id="reloadReps" class="ghost">Reload</button><button id="clearOldReps" class="ghost">Clear Old (&gt;7d)</button><button id="clearAllReps" class="ghost">Clear All</button></div></div>
+<div id="pane-notes" style="display:none">
+<label>Notepad (PyGPT-style, saved locally)</label><textarea id="notes" style="min-height:160px"></textarea>
+<button id="saveNotes" class="ghost">💾 Save notes</button>
+<hr><label>Schedule scan (simple local scheduler)</label>
+<div class="row"><input id="schedTarget" placeholder="example.com"><input id="schedAt" type="datetime-local"></div>
+<button id="schedGo" class="warn">⏰ Schedule AUTO scan</button>
+<div id="schedList"></div>
+</div>
+</div>
+</div>
+</main>
+<script>
+let cur=null, timer=null, msgs=[], lastReport=null, lastAgent=null, lastReply="", installTimer=null;
+const $=id=>document.getElementById(id);
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+function escAttr(s){return String(s==null?'':s).replace(/['"\\]/g,'')}
+async function j(u,o){try{const r=await fetch(u,o);try{return await r.json()}catch(e){const t=await r.text().catch(()=> '');return {error:'bad response '+r.status, detail:String(t).slice(0,300)}}}catch(e){return {error:'request failed: '+e.message}}}
+function addMsg(role,text){const d=document.createElement('div');d.className='msg '+(role==='user'?'u':'a');const s=document.createElement('span');s.textContent=text;const sm=document.createElement('small');sm.textContent=(role==='user'?'you':'AI · '+($('model').value||''));d.appendChild(s);d.appendChild(sm);$('chat').appendChild(d);$('chat').scrollTop=1e9}
+async function loadModels(){const d=await j('/api/models');const m=$('model');m.innerHTML='';(d.models||[]).forEach(x=>{if(!x.name)return;const o=document.createElement('option');o.value=x.name;o.textContent=x.name;m.appendChild(o)});if(!m.options.length){const o=document.createElement('option');o.textContent='(no ollama models)';m.appendChild(o)}const ml=$('modelList');if(ml){ml.innerHTML='';const list=(d.models||[]).filter(x=>x.name);if(!list.length)ml.textContent='(none)';list.forEach(x=>{const div=document.createElement('div');div.style.margin='4px 0';const sp=document.createElement('span');sp.className='pill ok';sp.textContent=x.name;div.appendChild(sp);[['info',e=>showModel(e)],['delete',e=>delModel(e)],['use',e=>useModel(e)]].forEach(([lbl,fn])=>{const b=document.createElement('button');b.className='ghost';b.style.cssText='width:auto;margin:2px;padding:4px 10px';b.textContent=lbl;b.onclick=()=>fn(x.name);div.appendChild(document.createTextNode(' '));div.appendChild(b)});ml.appendChild(div)})}}
+window.showModel=async n=>{const d=await j('/api/models/show',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:n})});$('modelInfo').textContent=d.info||d.error};
+window.delModel=async n=>{if(!confirm('Delete '+n+'?'))return;await j('/api/models/delete',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:n})});loadModels()};
+window.useModel=n=>{$('model').value=n};
+async function loadHealth(){try{const d=await j('/api/health');$('health').textContent=(d.ollama?'● ollama ✓ ':'● ollama ✗ ')+(d.models||[]).length+' models';$('health').className='pill '+(d.ollama?'ok':'miss')}catch(e){$('health').textContent='● offline'}}
+async function loadScans(){const d=await j('/api/scan/list');if(d.error)return;const s=$('scans');s.innerHTML='';if(!d.length){const o=document.createElement('option');o.value='';o.textContent='(no scans yet — start one above)';s.appendChild(o);cur=null;return}d.slice().reverse().forEach(x=>{const o=document.createElement('option');o.value=x.id;o.textContent=`${String(x.id).slice(9)} · ${x.status}`;s.appendChild(o)});if(!cur||!d.some(x=>x.id===cur))cur=d[d.length-1].id;try{s.value=cur}catch(e){}}
+async function loadKeys(){const d=await j('/api/keys/status');if(d.error){$('keys').textContent=d.error;return}const box=$('keys');box.innerHTML='';const sm=document.createElement('small');sm.textContent=d.mode||'';box.appendChild(sm);box.appendChild(document.createElement('br'));for(const[k,v]of Object.entries(d.paid_keys||{})){const div=document.createElement('div');div.className='pill '+(v.present?'ok':'miss');div.textContent=`${k}: ${v.present?'key set':'FREE fallback ✓'}`;box.appendChild(div);box.appendChild(document.createElement('br'));const s2=document.createElement('small');s2.textContent=v.free_fallback||'';box.appendChild(s2);box.appendChild(document.createElement('br'))}}
+async function loadTools(){const d=await j('/api/tools/status');if(d.error){$('tools').textContent=d.error;return}const box=$('tools');box.innerHTML='';for(const[k,v]of Object.entries(d)){const sp=document.createElement('span');sp.className='pill '+(v?'ok':'miss');sp.textContent=`${k}${v?' ✓':''}`;box.appendChild(sp);box.appendChild(document.createTextNode(' '))}}
+async function loadReps(){const d=await j('/api/reports');if(d.error){$('reps').textContent=d.error;return}const box=$('reps');box.innerHTML='';if(!d.length){box.textContent='(no reports)';return}d.forEach(f=>{const div=document.createElement('div');div.className='file';div.textContent=`📄 ${f.name} (${f.size}b)`;div.onclick=()=>dlRep(f.name);box.appendChild(div)})}
+window.dlRep=n=>{window.location='/api/reports/download?name='+encodeURIComponent(n)};
+async function loadRag(){const d=await j('/api/rag/list');if(d.error){$('ragList').textContent=d.error;return}const box=$('ragList');box.innerHTML='';if(!d.length){box.innerHTML='<small>(no docs — upload txt/md/pdf)</small>';return}d.forEach(f=>{const sp=document.createElement('span');sp.className='pill ok';sp.textContent=`${f.name} (${f.size}b)`;box.appendChild(sp);box.appendChild(document.createTextNode(' '));const a=document.createElement('a');a.href='#';a.style.color='var(--red)';a.textContent='✕';a.onclick=ev=>{ev.preventDefault();delRag(f.name)};box.appendChild(a);box.appendChild(document.createTextNode(' '))})}
+window.delRag=async n=>{await j('/api/rag/delete',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:n})});loadRag()};
+async function loadNotes(){const d=await j('/api/notepad/load');$('notes').value=d.text||''}
+async function loadSched(){const d=await j('/api/schedule/list');$('schedList').innerHTML=d.map(s=>`<div class="pill">${s.name} · ${s.kind} · ${s.payload} · ${s.run_at}</div>`).join('')||'<small>(none)</small>'}
+// tabs
+document.querySelectorAll('.tabs button[data-t]').forEach(b=>b.onclick=()=>{document.querySelectorAll('.tabs button[data-t]').forEach(x=>x.classList.remove('on'));b.classList.add('on');['chat','pentest','rag','agent','lab','models','tools','browser','crawler','reports','notes'].forEach(t=>$('pane-'+t).style.display=(t===b.dataset.t?'':'none'))});
+document.querySelectorAll('.tabs button[data-s]').forEach(b=>b.onclick=()=>{document.querySelectorAll('.tabs button[data-s]').forEach(x=>x.classList.remove('on'));b.classList.add('on');['find','files','rep'].forEach(t=>$('spane-'+t).style.display=(t===b.dataset.s?'':'none'))});
+document.querySelectorAll('.tabs button[data-c]').forEach(b=>b.onclick=()=>{document.querySelectorAll('.tabs button[data-c]').forEach(x=>x.classList.remove('on'));b.classList.add('on');['pages','tech','detail','analysis'].forEach(t=>$('crpane-'+t).style.display=(t===b.dataset.c?'':'none'))});
+// chat
+async function sendChat(){const q=$('qin').value.trim();if(!q)return;$('qin').value='';addMsg('user',q);msgs.push({role:'user',content:q});const mode=$('workmode').value;let url='/api/chat',body={model:$('model').value,messages:msgs,system:$('system').value,session:$('session').value,use_rag:$('useRag').checked,scan_id:cur,crawl_id:curCrawl,temperature:(()=>{const v=parseFloat($('temp').value);return isNaN(v)?0.7:Math.min(2,Math.max(0,v))})()};
+if(mode==='rag'){const d=await j('/api/rag/query',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({query:q,model:$('model').value})});lastReply=d.reply||'(empty)';addMsg('assistant',lastReply+'\n\n[sources: '+(d.hits||[]).map(h=>h.file).join(', ')+']');msgs.push({role:'assistant',content:lastReply});return}
+if(mode==='completion'){const d=await j('/api/complete',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({prompt:q,model:$('model').value})});lastReply=d.reply;addMsg('assistant',lastReply);msgs.push({role:'assistant',content:lastReply});return}
+if(mode==='research'){const d=await j('/api/research',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({query:q,model:$('model').value})});lastReply=d.reply;addMsg('assistant',lastReply);msgs.push({role:'assistant',content:lastReply});return}
+if(mode==='autonomous'){runAgentWith(q);return}
+if(mode==='pentest'){body.scan_id=cur}
+if(mode==='vision'){alert('Vision mode: use Lab tab to upload an image.');return}
+addMsg('assistant','⏳ thinking…');let d;try{const ctrl=new AbortController();window.__chatCtrl=ctrl;d=await j(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body),signal:ctrl.signal})}catch(e){d={error:String(e)}}const nodes=$('chat').querySelectorAll('.msg.a span');if(d.error&&!d.reply){if(nodes.length)nodes[nodes.length-1].textContent='Error: '+d.error;try{fetch('/api/chat/stop',{method:'POST'})}catch(e){};return}if(d.verification&&!d.verification.ok&&Array.isArray(d.verification.notes)){d.reply=(d.reply||'(empty)')+'\n\n⚠ anti-hallucination: '+d.verification.notes.join('; ')+' (risk '+d.verification.risk+')'}if(nodes.length)nodes[nodes.length-1].textContent=d.reply||'(empty)';lastReply=d.reply||'';msgs.push({role:'assistant',content:lastReply})}
+$('qsend').onclick=sendChat;$('qin').addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendChat()}});
+$('hist').onclick=async()=>{const d=await j('/api/chat/history?session='+encodeURIComponent($('session').value));$('chat').innerHTML='';(d.messages||[]).forEach(m=>addMsg(m.role,m.content))};
+$('clearHist').onclick=async()=>{await j('/api/chat/clear',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({session:$('session').value})});$('chat').innerHTML='';msgs=[]};
+$('exportChat').onclick=()=>{const md='# GBLOXK chat export\n\n'+msgs.map(m=>`## ${m.role}\n${m.content}\n`).join('\n');const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([md],{type:'text/markdown'}));a.download='chat.md';a.click()};
+// scan
+$('refreshModels').onclick=loadModels;
+$('start').onclick=async()=>{const t=$('target').value.trim();if(!t)return alert('enter target');const r=await j('/api/scan/start',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({target:t,mode:$('mode').value})});if(r.error)return alert(r.error);cur=r.scan_id;await loadScans();watch()};
+$('watch').onclick=()=>watch();$('stop').onclick=async()=>{if(!cur)return alert('no active scan');await j(`/api/scan/${cur}/stop`,{method:'POST'});clearInterval(timer);await loadScans()};
+$('stopAll').onclick=async()=>{if(!confirm('STOP ALL jobs (scans + agents + shell)?'))return;clearInterval(timer);await j('/api/system/kill-all',{method:'POST'});await j('/api/scan/stop-all',{method:'POST'});await j('/api/agent/stop-all',{method:'POST'});await loadScans();$('log').textContent='ALL JOBS STOPPED by user.'};
+$('quit').onclick=async()=>{if(!confirm('Stop ALL jobs and close server?'))return;clearInterval(timer);try{await j('/api/system/kill-all',{method:'POST'})}catch(e){}await j('/api/shutdown',{method:'POST'});document.body.innerHTML='<div style="padding:60px;text-align:center"><h2>GBLOXK Ultimate stopped — all jobs killed.</h2><p>Close this tab. Relaunch with start.sh or the Applications menu.</p></div>'};
+// ALWAYS stop polling + notify server when tab/window closes. Server keeps running for
+// other tabs, but this tab's scan-watch and agents stop; full process kill happens on
+// server exit (SIGINT/SIGTERM/SIGHUP/atexit) or QUIT / STOP ALL.
+try{$('qstop').onclick=()=>{try{if(window.__chatCtrl)window.__chatCtrl.abort();fetch('/api/chat/stop',{method:'POST'}).catch(()=>{})}catch(e){}};}catch(e){}
+// browser tab
+async function brFetch(render){$('brStatus').textContent='⏳ fetching…';const d=await j('/api/browser/fetch',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({url:$('brUrl').value,render:!!render})});if(d.error){$('brStatus').textContent='error: '+d.error;return}const t=d.text||'';$('brText').value=t;$('brStatus').textContent=`${d.title||'(no title)'} · ${t.length} chars · engine=${d.engine||'?'} · blocked=${d.blocked} · bypassed=${(d.anti_waf||{}).bypassed}`;const box=$('brLinks');box.innerHTML='';(d.links||[]).forEach(l=>{const a=document.createElement('a');a.href=l.href;a.target='_blank';a.textContent=(l.text||l.href);a.style.display='block';a.style.fontSize='12px';box.appendChild(a)})} 
+async function brShot(){const url=$('brUrl').value.trim();if(!url)return;$('brImgInfo').textContent='⏳ shooting…';const r=await j('/api/browser/screenshot',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({url})});if(r.error){$('brImgInfo').textContent='error: '+r.error;return}$('brImg').src=r.image_url+'?t='+Date.now();$('brImgInfo').textContent=r.image_url+' ('+r.size+'b)'}
+window.__brLive=false;let brTimer=null;
+async function brAnalyze(){const url=$('brUrl').value.trim();if(!url)return;$('brStatus').textContent='⏳ analyzing…';const d=await j('/api/browser/analyze',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({url,model:$('model').value,prompt:$('brPrompt').value})});if(d.error){$('brStatus').textContent='error: '+d.error;return}$('brStatus').textContent='✓ analyzed';alert((d.reply||'').slice(0,1200))}
+try{$('brGo').onclick=()=>brFetch(false);$('brShot').onclick=brShot;const rl=$('brRender');if(rl)rl.onclick=()=>brFetch(true);$('brAnalyze').onclick=brAnalyze;$('brLive').onclick=()=>{window.__brLive=!window.__brLive;$('brLive').textContent=window.__brLive?'Live: on':'Live: off';if(brTimer)clearInterval(brTimer);if(window.__brLive)brTimer=setInterval(brShot,5000)}}catch(e){}
+window.addEventListener('beforeunload',()=>{try{clearInterval(timer);if(installTimer)clearInterval(installTimer);const b=new Blob([JSON.stringify({})],{type:'application/json'});navigator.sendBeacon('/api/client-disconnect',b)}catch(e){}});
+// pagehide fallback (mobile/tab close): same safe stop-polling, server auto-cleans procs on exit
+window.addEventListener('pagehide',()=>{try{clearInterval(timer);if(installTimer)clearInterval(installTimer)}catch(e){}});
+function watch(){clearInterval(timer);if(!cur)return;timer=setInterval(async()=>{if(!cur){clearInterval(timer);return}try{const s=await j(`/api/scan/${cur}/status`);if(s.error){$('log').textContent='status: '+s.error;clearInterval(timer);return}const l=await j(`/api/scan/${cur}/log?tail=400`);$('log').textContent=(l&&l.log)||'(waiting…)';$('log').scrollTop=1e9;try{await loadFindings()}catch(e){}if(s.status==='done'||s.status==='error'||s.status==='stopped'){clearInterval(timer);try{await loadScans()}catch(e){}}}catch(e){$('log').textContent='watch failed: '+e.message}}),2000}
+async function loadFindings(){if(!cur)return;const d=await j(`/api/scan/${cur}/findings`);const t=$('ftab');t.innerHTML='';const hr=t.insertRow();['Type','Detail','Severity'].forEach(h=>{const th=document.createElement('th');th.textContent=h;hr.appendChild(th)});(d.items||[]).forEach(i=>{const r=t.insertRow();[i.type||'',JSON.stringify(i).slice(0,220),i.severity||''].forEach(v=>{const c=r.insertCell();c.textContent=v})})}
+$('loadFiles').onclick=async()=>{if(!cur)return alert('no scan');const d=await j(`/api/scan/${cur}/files`);if(d.error)return alert(d.error);const box=$('files');box.innerHTML='';(d.files||[]).forEach(f=>{const div=document.createElement('div');div.className='file';div.textContent=`📄 ${f.path} (${f.size}b)`;div.onclick=async()=>{try{const r=await fetch(`/api/scan/${cur}/file?path=${encodeURIComponent(f.path)}`);$('preview').textContent=await r.text()}catch(e){$('preview').textContent='load failed: '+e.message}};box.appendChild(div)});if(!(d.files||[]).length)box.textContent='(no files)'};
+$('analyze').onclick=async()=>{if(!cur)return alert('start a scan first');$('arep').textContent='⏳ generating with '+$('model').value+'…';const d=await j('/api/ai/analyze',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({scan_id:cur,model:$('model').value,report_type:$('rtype').value})});if(d.error){$('arep').textContent=d.error;return}lastReport=d.file;$('arep').textContent='✓ '+d.file;let txt='';for(const[k,v]of Object.entries(d.report))txt+=`## ${k.toUpperCase()}\n${v}\n\n`;$('report').textContent=txt;loadReps()};
+$('dlRep').onclick=()=>{if(lastReport)dlRep(lastReport)};
+// rag
+$('ragUp').onclick=async()=>{const f=$('ragFile').files[0];if(!f)return alert('choose file');const fd=new FormData();fd.append('file',f);const r=await fetch('/api/rag/upload',{method:'POST',body:fd});const d=await r.json();alert(d.saved?('saved '+d.saved):d.error);loadRag()};
+$('ragAsk').onclick=async()=>{const q=$('ragQ').value.trim();if(!q)return;$('ragAns').textContent='⏳…';const d=await j('/api/rag/query',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({query:q,model:$('model').value})});$('ragAns').textContent=(d.reply||'')+'\n\n--- hits: '+((d.hits||[]).map(h=>h.file+'('+h.score+')').join(', ')||'none')};
+// agent
+async function runAgentWith(goal){$('agentLog').textContent='⏳ agent starting…';const d=await j('/api/agent/run',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({goal,model:$('model').value})});if(d.error)return alert(d.error);lastAgent=d.agent_id;pollAgent()}
+$('runAgent').onclick=()=>{const g=$('goal').value.trim();if(!g)return alert('enter goal');runAgentWith(g)};
+async function pollAgent(){if(!lastAgent)return;const d=await j('/api/agent/'+lastAgent+'/log');$('agentLog').textContent=d.log||'(waiting…)';$('agentLog').scrollTop=1e9;if(d.status==='running')setTimeout(pollAgent,2500)}
+$('pollAgent').onclick=pollAgent;$('stopAgent').onclick=async()=>{if(!lastAgent)return;await j('/api/agent/'+lastAgent+'/stop',{method:'POST'})};
+$('resGo').onclick=async()=>{const q=$('resQ').value.trim();if(!q)return;$('resOut').textContent='⏳…';const d=await j('/api/research',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({query:q,model:$('model').value})});$('resOut').textContent=(d.reply||'')+'\n\n[evidence]\n'+(d.evidence||'')};
+$('compGo').onclick=async()=>{const p=$('compP').value.trim();if(!p)return;$('compOut').textContent='⏳…';const d=await j('/api/complete',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({prompt:p,model:$('model').value})});$('compOut').textContent=d.reply||d.error};
+// lab (FULL SYSTEM ACCESS)
+$('pyGo').onclick=async()=>{const d=await j('/api/system/exec',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({kind:'python',code:$('pyCode').value})});$('labOut').textContent=d.output||d.error};
+$('shGo').onclick=async()=>{const t=parseInt($('shTimeout').value||'120');const d=await j('/api/system/exec',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({kind:'shell',code:$('shCode').value,cwd:$('shCwd').value||'',timeout:isNaN(t)?120:t})});$('labOut').textContent=(d.output||d.error)+(d.returncode!==undefined?'\n[exit '+d.returncode+']':'')};
+$('fsList').onclick=async()=>{const d=await j('/api/files/list',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({path:$('fsPath').value||'~'})});$('fsContent').value=d.error||('PATH: '+d.path+'\n'+(d.files||[]).map(f=>(f.dir?'[DIR] ':'[FILE] ')+f.name+(f.size?' ('+f.size+'b)':'')).join('\n'))};
+$('fsRead').onclick=async()=>{const d=await j('/api/files/read',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({path:$('fsPath').value||''})});$('fsContent').value=d.content||d.error};
+$('fsWrite').onclick=async()=>{const p=$('fsWritePath').value.trim();if(!p)return alert('enter save path');const d=await j('/api/files/write',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({path:p,content:$('fsContent').value})});alert(d.saved?('saved '+d.saved):d.error)};
+$('visGo').onclick=async()=>{const f=$('visFile').files[0];if(!f)return alert('choose image');const fd=new FormData();fd.append('image',f);fd.append('model',$('model').value);fd.append('prompt',$('visP').value||'Describe this image.');$('visOut').textContent='⏳…';const r=await fetch('/api/vision',{method:'POST',body:fd});const d=await r.json();$('visOut').textContent=d.reply||d.error};
+// models
+$('pullGo').onclick=async()=>{const n=$('pullName').value.trim();if(!n)return;await j('/api/models/pull',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:n})});alert('pull started in background: '+n);setTimeout(loadModels,8000)};
+// tools
+$('installTools').onclick=async()=>{await j('/api/tools/install',{method:'POST'});if(installTimer)clearInterval(installTimer);installTimer=setInterval(async()=>{const d=await j('/api/tools/install/log');$('instLog').textContent=(d&&d.log)||d.error||'';if(d&&(d.done===true||d.running===false))clearInterval(installTimer)},3000)};
+// notes/sched
+$('saveNotes').onclick=async()=>{await j('/api/notepad/save',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({text:$('notes').value})});alert('saved')};
+$('schedGo').onclick=async()=>{const t=$('schedTarget').value.trim();if(!t)return alert('target?');await j('/api/schedule/add',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:'scan '+t,kind:'scan',payload:t,run_at:new Date($('schedAt').value||Date.now()+60000).toISOString()})});loadSched()};
+$('reloadReps').onclick=loadReps;
+try{$('clearOldReps').onclick=async()=>{if(!confirm('Clear reports older than 7 days?'))return;const d=await j('/api/reports/clear',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({older_than_days:7})});alert('removed '+(d.count||0));loadReps()};$('clearAllReps').onclick=async()=>{if(!confirm('Clear ALL reports?'))return;const d=await j('/api/reports/clear',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({all:true})});alert('removed '+(d.count||0));loadReps()};}catch(e){}
+// voice
+$('mic').onclick=()=>{const SR=window.SpeechRecognition||window.webkitSpeechRecognition;if(!SR)return alert('browser has no speech recognition');const r=new SR();r.lang='en-US';r.onresult=e=>{$('qin').value=e.results[0][0].transcript};r.start()};
+$('speak').onclick=()=>{speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(lastReply.slice(0,800)||'no reply yet');speechSynthesis.speak(u)};
+// init
+loadModels();loadHealth();loadScans();loadKeys();loadTools();loadReps();loadRag();loadNotes();loadSched();loadCrawls();setInterval(loadHealth,10000);
+addMsg('assistant','Welcome to GBLOXKOS — unified AI assistant by GBLOXK_OS LLC. Pick a model, chat, upload docs for RAG, browse, crawl sites, or run an auto-pentest. 100% local, free.');
+</script>
+</body>
+</html>
